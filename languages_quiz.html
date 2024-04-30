@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Languages</title>
+        <style>
+            body {
+                margin: 0;
+            }
+            
+            #text-container, #end-screen {
+                width: 100%;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+
+            #question {
+                margin-bottom: -30px;
+            }
+
+            #text {
+                font-size: 4rem;
+            }
+
+            #input-container {
+                position: absolute;
+                display: flex;
+                flex-direction: column;
+                flex-grow: 0;
+                width: 100%;
+                bottom: 0;
+                justify-content: center;
+                align-items: center;
+                margin-bottom: 10px;
+            }
+
+            #input-container > label {
+                margin-right: 5px;
+            }
+
+            #input {
+                padding: 10px;
+                border-radius: 15px;
+            }
+
+            #input-text {
+                transition: margin-left 0.2s ease-out;
+            }
+
+            #score {
+                position: absolute;
+                top: -5px;
+                left: 10px;
+            }
+
+            #skip {
+                position: absolute;
+                right: 0;
+                --width: 70px;
+                width: var(--width);
+                height: var(--width);
+                cursor: pointer;
+                border-radius: 200%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                margin-top: 10px;
+                margin-right: 10px;
+                border: 0;
+                outline: 1px solid black;
+            }
+
+            #skip:focus-visible {
+                outline: 4px solid black;
+            }
+
+            /* #skip > img {
+                width: calc(var(--width) - 30px);
+                height: calc(var(--width) - 30px);
+                margin-left: 5px;
+                margin-bottom: 2px;
+            } */
+
+            #skip > span {
+                font-size: 30px;
+            }
+
+            .nicebtn {
+                border-radius: 10px;
+                padding: 10px;
+                cursor: pointer;
+                border: 0;
+                outline: 1.5px solid black;
+                tabindex: 1;
+            }
+
+            .nicebtn:focus-visible {
+                outline: 4px solid black;
+            }
+
+            #end-screen {
+                display: none;
+            }
+
+            #end-screen > h1 {
+                font-size: 4rem;
+                margin-bottom: -10px;
+            } 
+        </style>
+    </head>
+    <body>
+        <p id="score">0% <br> 0/0</p>
+        <div id="container">
+            <button id="skip" title="Skip">
+                <!-- <img src="https://uxwing.com/wp-content/themes/uxwing/download/controller-and-music/forward-icon.png" /> -->
+                <span>⏩</span>
+            </button>
+            <div id="text-container">
+                <h2 id="question">What language is this?</h2>
+                <h1 id="text">Loading...</h1>
+            </div>
+            <div id="input-container">
+                <h2 id="input-text">(Inputs are case insensitive)</h2>
+                <span>
+                    <label for="input">Your input: </label>
+                    <input type="text" id="input" autofocus="true" autocomplete="off" />
+                    <button type="submit" id="submit" title="Submit" class="nicebtn">Submit</button>
+                </span>
+            </div>
+        </div>
+        <div id="end-screen"></div>
+        <script defer>            
+            let quizOver = false;
+            
+            window.addEventListener('beforeunload', function(e) {
+                let confirmationMessage = "You are in the middle of the game, are you sure you want to leave?";
+                if (quizOver) confirmationMessage = "Are you sure you want to leave the results page?";
+                
+                (e || window.event).returnValue = confirmationMessage;
+                return confirmationMessage;
+            });
+            
+            let index = -1;
+
+            const score = document.querySelector('#score');
+            
+            const text = document.querySelector('#text');
+            const input = document.querySelector('#input');
+            const inputT = document.querySelector('#input-text');
+            const DEFAULT_INPUTT_TEXT = "(Inputs are case insensitive)";
+            const submitBtn = document.querySelector('#submit');
+
+            const skip = document.querySelector('#skip');
+
+            let correct = 0;
+            let attempts = 0;
+
+            const br = document.createElement('br');
+
+            inputT.innerText = DEFAULT_INPUTT_TEXT;
+            input.addEventListener('input', function() {
+                inputT.innerText = input.value;
+                if (input.value == "") inputT.innerText = DEFAULT_INPUTT_TEXT;
+            });
+
+            input.addEventListener('keydown', function(e) {
+                if (e.key == "Enter") submitI();
+            });
+
+            submitBtn.addEventListener('click', function() {
+                submitI();
+                input.focus();
+            });
+
+            skip.addEventListener('click', function() {
+                switchT();
+                submitI();
+                input.focus();
+            });
+
+            const arr = ["Hello", "Hola", "Bonjour", "Guttentag", "привет", "नमस्ते", "नमस्कार", "નમસ્તે", "你好", "வணக்கம்", "నమస్కారం", "안녕하세요", "こんにちは", "مرحبًا", "ਸਤ ਸ੍ਰੀ ਅਕਾਲ", "ನಮಸ್ಕಾರ", "Γειά σου", "Salve", "Olá", "Salam", "Hei", "Aloha", "שלום", "ഹലോ", "سلام", "Witam", "Buna ziua", "सुप्रभातम्‌", "ආයුබෝවන්", "สวัสดี", "Taart"];
+            
+            const arrL = ["english", "spanish", "french", "german", "russian", "hindi", "marathi", "gujarati", "chinese", "tamil", "telugu", "korean", "japanese", "arabic", "punjabi", "kannada", "greek", "latin", "portuguese", "azerbaijani", "finnish", "hawaiian", "hebrew", "malayalam", "pastho", "polish", "romanian", "sanskrit", "sinhala", "thai", "dutch"];
+
+            switchT();
+            
+            function switchT() {
+                if (input.hasAttribute('disabled')) return;
+                
+                index++;
+                if (index >= arr.length) {
+                    quizOver = true;
+                    
+                    document.querySelector('#container').style.display = "none";
+                    let endscreen = document.querySelector('#end-screen');
+                    endscreen.style.display = "flex";
+
+                    let h1 = document.createElement('h1');
+                    h1.innerText = "Quiz Over!";
+                    endscreen.appendChild(h1);
+
+                    let h2 = document.createElement('h2');
+                    h2.style.textAlign = "center";
+                    h2.innerText = 
+                        "Score Metrics: " +
+                        "\nScore: " + correct + "/" + arr.length + 
+                        "\nScore Percentage: " + ((correct / arr.length)*100).toFixed(3) + "%" + 
+                        "\n\nAccuracy Metrics: " + 
+                        "\nAccuracy: " + correct + "/" + attempts + 
+                        "\nAccuracy Percentage: " + ((correct / attempts)*100).toFixed(3) + "%";
+                    endscreen.appendChild(h2);
+
+                    let btn = document.createElement('button');
+                    btn.classList.add("nicebtn");
+                    btn.innerText = "Restart";
+                    endscreen.appendChild(btn);
+
+                    btn.addEventListener('click', function() {
+                        window.location.reload();
+                    });
+
+                    // btn.focus();
+                    
+                    return;
+                }
+
+                text.innerText = arr[index];
+            }
+
+            function submitI() {
+                if (input.hasAttribute('disabled')) return;
+                
+                attempts++;
+                if (input.value.toLowerCase() == arrL[index]) {
+                    correct++;
+                    inputT.style.color = "green";
+                    inputT.value += "✅";
+                    switchT();
+                    setTimeout(function() {
+                        inputT.style.color = "black";
+                        inputT.innerText = DEFAULT_INPUTT_TEXT;
+                        input.value = "";
+                    }, 500);
+                } else {
+                    inputT.style.color = "red";
+                    inputT.style.marginLeft = "-40px";
+                    input.setAttribute('disabled', true);
+                    setTimeout(function() {
+                        inputT.style.marginLeft = "40px";
+                    }, 100);
+                    setTimeout(function() {
+                        inputT.style.marginLeft = "0px";
+                    }, 300);
+                    setTimeout(function() {
+                        inputT.style.color = "black";
+                        inputT.innerText = DEFAULT_INPUTT_TEXT;
+                        input.value = "";
+                        input.removeAttribute('disabled');
+                        input.focus();
+                    }, 400);
+                }
+
+                score.innerHTML = ((correct / attempts)*100).toFixed(3) + "%";
+                score.appendChild(br);
+                score.innerHTML += correct + "/" + attempts;
+            }
+        </script>
+    </body>
+</html>
