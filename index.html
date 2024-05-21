@@ -1,10 +1,18 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Languages Game</title>
+        <title>Languages</title>
         <style>
             body {
                 margin: 0;
+                height: 100vh;
+                padding: 0;
+                overflow-y: hidden;
+            }
+
+            html {
+                --primary: hsl(235, 86%, 65%);
+                --accent: hsl(235, 86%, 80%);
             }
             
             #text-container, #end-screen {
@@ -22,6 +30,8 @@
 
             #text {
                 font-size: 4rem;
+                pointer-events: none;
+                user-select: none;
             }
 
             #input-container {
@@ -102,13 +112,62 @@
             }
 
             #end-screen {
-                display: none;
+                position: absolute;
+                width: 100vw;
+                height: 100vh;
+                top: 0;
+                z-index: -1;
             }
 
             #end-screen > h1 {
                 font-size: 4rem;
                 margin-bottom: -10px;
             } 
+
+            #menu {
+                display: flex;
+                flex-direction: column;
+                width: 100px;
+                height: fit-content;
+                border-radius: 10px;
+                background-color: var(--primary);
+                color: white;
+                padding: 20px;
+                gap: 10px;
+                margin-top: 10px;
+                transition: opacity 0.25s ease-in-out;
+                position: absolute;
+            }
+
+            #menu.hidden {
+                pointer-events: none;
+                position: absolute;
+            }
+
+            .menu-button {
+                background-color: var(--accent);
+                color: white;
+                border: 0;
+                outline: 0;
+                padding: 10px;
+                border-radius: 10px;
+                cursor: pointer;
+                transition: rotate 0.15s ease-in-out, padding 0.15s ease-in-out;
+            }
+
+            #menu.hidden .menu-button {
+                cursor: default;
+            }
+
+            .menu-button:hover {
+                font-size: 14px;
+                rotate: -10deg;
+                padding: 15px;
+            }
+
+            .menu-button:nth-child(even):hover {
+                rotate: 10deg;
+            }
         </style>
     </head>
     <body>
@@ -130,6 +189,10 @@
                     <button type="submit" id="submit" title="Submit" class="nicebtn">Submit</button>
                 </span>
             </div>
+        </div>
+        <div id="menu" class="hidden">
+            <p>No, you may not access the inspect menu</p>
+            <button id="menu-action1" class="menu-button">Skip this language</button>
         </div>
         <div id="end-screen"></div>
         <script defer>            
@@ -193,10 +256,16 @@
                 index++;
                 if (index >= arr.length) {
                     quizOver = true;
+
+                    document.querySelector('#container').style.display = "none";
                     
                     document.querySelector('#container').style.display = "none";
                     let endscreen = document.querySelector('#end-screen');
+                    endscreen.style.opacity = "1";
                     endscreen.style.display = "flex";
+                    endscreen.style.width = "100vw";
+                    endscreen.style.height = "100vh";
+                    endscreen.style.zIndex = "9999";
 
                     let h1 = document.createElement('h1');
                     h1.innerText = "Quiz Over!";
@@ -267,6 +336,61 @@
                 score.appendChild(br);
                 score.innerHTML += correct + "/" + attempts;
             }
+
+            let menu = document.getElementById('menu');
+            menu.style.opacity = 0;
+
+            let mouseX = 10;
+            let mouseY = 60;
+
+            function showMenu() {
+                menu.style.opacity = 1;
+                menu.classList.remove('hidden');
+                menu.style.position = "absolute";
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                menu.style.left = mouseX + "px";
+                menu.style.top = mouseY + "px";
+            }
+
+            function hideMenu() {
+                menu.style.left = (mouseX - 8) + "px";
+                menu.style.top = mouseY + "px";
+                menu.style.opacity = 0;
+                menu.classList.add('hidden');
+                menu.style.position = "relative";
+            }
+
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+
+            document.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showMenu(e);
+            });
+
+            document.addEventListener('click', (e) => {
+                hideMenu();
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key == "Escape") hideMenu();
+                if (e.key == "F12") {
+                    e.preventDefault();
+                    showMenu(e);
+                }
+                
+                if (e.ctrlKey && e.key == 'c') {
+                    e.preventDefault();
+                    showMenu(e);
+                }
+            });
+
+            document.querySelector('#menu-action1').addEventListener('click', function() {
+                skip.click();
+            });
         </script>
     </body>
 </html>
